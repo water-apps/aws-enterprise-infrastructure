@@ -1,0 +1,16 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Shell scripts should always use LF
+*.sh text eol=lf
+
+# Terraform files
+*.tf text
+*.tfvars text
+
+# Documentation
+*.md text
+
+# GitHub workflows
+*.yml text
+*.yaml text
