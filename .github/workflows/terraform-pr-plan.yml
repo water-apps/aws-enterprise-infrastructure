@@ -17,24 +17,35 @@ jobs:
   plan-standalone-modules:
     name: "Plan 02 + 03 (PR)"
     runs-on: ubuntu-latest
-    if: ${{ secrets.AWS_OIDC_ROLE_ARN != '' }}
     timeout-minutes: 45
     env:
       AWS_REGION: ap-southeast-2
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check OIDC configuration
+        id: oidc
+        run: |
+          if [ -z "${{ secrets.AWS_OIDC_ROLE_ARN }}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: hashicorp/setup-terraform@v3
+        if: steps.oidc.outputs.configured == 'true'
         with:
           terraform_version: "1.7.5"
 
       - uses: aws-actions/configure-aws-credentials@v4
+        if: steps.oidc.outputs.configured == 'true'
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           role-session-name: gha-pr-plan
 
       - name: Generate minimal tfvars (02,03)
+        if: steps.oidc.outputs.configured == 'true'
         run: |
           cat > 02-security/terraform.tfvars <<'EOF'
           environment = "development"
@@ -47,18 +58,21 @@ jobs:
           EOF
 
       - name: Terraform plan 02-security
+        if: steps.oidc.outputs.configured == 'true'
         run: |
           cd 02-security
           terraform init -input=false
           terraform plan -input=false -no-color | tee ../plan-02-security.txt
 
       - name: Terraform plan 03-networking
+        if: steps.oidc.outputs.configured == 'true'
         run: |
           cd 03-networking
           terraform init -input=false
           terraform plan -input=false -no-color | tee ../plan-03-networking.txt
 
       - name: Upload plan artifacts
+        if: steps.oidc.outputs.configured == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: terraform-pr-plans
@@ -66,7 +80,8 @@ jobs:
             plan-02-security.txt
             plan-03-networking.txt
 
-      - name: PR summary
+      - name: PR summary (planned)
+        if: steps.oidc.outputs.configured == 'true'
         run: |
           {
             echo "## Terraform PR Plan (Low Cost)"
@@ -74,19 +89,15 @@ jobs:
             echo "- Full-stack apply/test/destroy is available via the manual workflow: \`Ephemeral Showcase (Apply, Test, Destroy)\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Cleanup generated tfvars
-        if: always()
-        run: rm -f 02-security/terraform.tfvars 03-networking/terraform.tfvars
-
-  no-oidc-configured:
-    name: "PR Plan Skipped (Missing OIDC Secret)"
-    runs-on: ubuntu-latest
-    if: ${{ secrets.AWS_OIDC_ROLE_ARN == '' }}
-    steps:
-      - name: Summary
+      - name: PR summary (skipped)
+        if: steps.oidc.outputs.configured != 'true'
         run: |
           {
             echo "## Terraform PR Plan Skipped"
             echo "- Missing repository secret: \`AWS_OIDC_ROLE_ARN\`"
             echo "- Existing CI validate/security workflows still run on this PR."
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Cleanup generated tfvars
+        if: always()
+        run: rm -f 02-security/terraform.tfvars 03-networking/terraform.tfvars
