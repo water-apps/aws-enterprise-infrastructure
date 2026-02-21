@@ -1,0 +1,118 @@
+name: "Terraform — Validate & Security Scan"
+
+on:
+  push:
+    branches: [main]
+    paths: ['**/*.tf', '**/*.tfvars.example', '.github/workflows/terraform-ci.yml']
+  pull_request:
+    branches: [main]
+    paths: ['**/*.tf', '**/*.tfvars.example', '.github/workflows/terraform-ci.yml']
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  TF_VERSION: "1.7.5"
+
+jobs:
+  detect-modules:
+    name: "Detect changed modules"
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.find.outputs.modules }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: find
+        name: Find Terraform modules
+        run: |
+          modules=$(find . -maxdepth 1 -type d -name '[0-9]*' | sort | jq -R -s -c 'split("\n") | map(select(. != ""))')
+          echo "modules=$modules" >> "$GITHUB_OUTPUT"
+          echo "Found modules: $modules"
+
+  validate:
+    name: "Validate — ${{ matrix.module }}"
+    needs: detect-modules
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.detect-modules.outputs.modules) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        working-directory: ${{ matrix.module }}
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        working-directory: ${{ matrix.module }}
+        run: terraform validate
+
+      - name: Terraform Format Check
+        working-directory: ${{ matrix.module }}
+        run: terraform fmt -check -recursive
+
+  security-scan:
+    name: "Security Scan — tfsec"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          soft_fail: true
+          format: lovely
+
+      - name: Run checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: .
+          framework: terraform
+          soft_fail: true
+          output_format: cli
+
+  cost-estimate:
+    name: "Cost Estimate — Infracost"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+        continue-on-error: true
+
+      - name: Generate cost estimate
+        run: |
+          if command -v infracost &> /dev/null; then
+            infracost breakdown --path . --format table
+          else
+            echo "Infracost not configured — skipping cost estimate"
+            echo "To enable: add INFRACOST_API_KEY to repository secrets"
+          fi
+        continue-on-error: true
+
+  summary:
+    name: "Pipeline Summary"
+    needs: [validate, security-scan]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check results
+        run: |
+          echo "## Terraform CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Validate & Format | ${{ needs.validate.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Scan | ${{ needs.security-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*Pipeline ran on $(date -u '+%Y-%m-%d %H:%M UTC')*" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,50 @@
+name: "Security — Weekly Scan"
+
+on:
+  schedule:
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  tfsec-sarif:
+    name: "tfsec SARIF scan"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tfsec with SARIF output
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          sarif_file: tfsec.sarif
+          soft_fail: true
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: tfsec.sarif
+        if: always()
+
+  checkov:
+    name: "Checkov compliance scan"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: .
+          framework: terraform
+          soft_fail: true
+          output_format: cli,sarif
+          output_file_path: console,checkov.sarif
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov.sarif
+        if: always()
