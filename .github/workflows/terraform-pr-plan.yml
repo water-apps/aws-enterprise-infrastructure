@@ -1,0 +1,92 @@
+name: "Terraform PR Plan (Low Cost)"
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**/*.tf'
+      - '.github/workflows/terraform-pr-plan.yml'
+      - 'scripts/ci/ephemeral_demo.sh'
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+jobs:
+  plan-standalone-modules:
+    name: "Plan 02 + 03 (PR)"
+    runs-on: ubuntu-latest
+    if: ${{ secrets.AWS_OIDC_ROLE_ARN != '' }}
+    timeout-minutes: 45
+    env:
+      AWS_REGION: ap-southeast-2
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.5"
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          role-session-name: gha-pr-plan
+
+      - name: Generate minimal tfvars (02,03)
+        run: |
+          cat > 02-security/terraform.tfvars <<'EOF'
+          environment = "development"
+          aws_region  = "ap-southeast-2"
+          EOF
+
+          cat > 03-networking/terraform.tfvars <<'EOF'
+          environment = "development"
+          aws_region  = "ap-southeast-2"
+          EOF
+
+      - name: Terraform plan 02-security
+        run: |
+          cd 02-security
+          terraform init -input=false
+          terraform plan -input=false -no-color | tee ../plan-02-security.txt
+
+      - name: Terraform plan 03-networking
+        run: |
+          cd 03-networking
+          terraform init -input=false
+          terraform plan -input=false -no-color | tee ../plan-03-networking.txt
+
+      - name: Upload plan artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-pr-plans
+          path: |
+            plan-02-security.txt
+            plan-03-networking.txt
+
+      - name: PR summary
+        run: |
+          {
+            echo "## Terraform PR Plan (Low Cost)"
+            echo "- Planned standalone modules only: \`02-security\`, \`03-networking\`"
+            echo "- Full-stack apply/test/destroy is available via the manual workflow: \`Ephemeral Showcase (Apply, Test, Destroy)\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Cleanup generated tfvars
+        if: always()
+        run: rm -f 02-security/terraform.tfvars 03-networking/terraform.tfvars
+
+  no-oidc-configured:
+    name: "PR Plan Skipped (Missing OIDC Secret)"
+    runs-on: ubuntu-latest
+    if: ${{ secrets.AWS_OIDC_ROLE_ARN == '' }}
+    steps:
+      - name: Summary
+        run: |
+          {
+            echo "## Terraform PR Plan Skipped"
+            echo "- Missing repository secret: \`AWS_OIDC_ROLE_ARN\`"
+            echo "- Existing CI validate/security workflows still run on this PR."
+          } >> "$GITHUB_STEP_SUMMARY"
