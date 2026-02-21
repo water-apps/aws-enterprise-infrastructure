@@ -12,7 +12,7 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
-  
+
   default_tags {
     tags = var.common_tags
   }
@@ -121,9 +121,9 @@ resource "aws_organizations_policy" "require_s3_encryption" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "DenyUnencryptedObjectUploads"
-        Effect = "Deny"
-        Action = "s3:PutObject"
+        Sid      = "DenyUnencryptedObjectUploads"
+        Effect   = "Deny"
+        Action   = "s3:PutObject"
         Resource = "*"
         Condition = {
           StringNotEquals = {
@@ -236,7 +236,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "cloudtrail" {
     }
 
     expiration {
-      days = 2555  # 7 years for compliance
+      days = 2555 # 7 years for compliance
     }
   }
 }

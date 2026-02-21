@@ -45,7 +45,7 @@ variable "db_master_password" {
 variable "db_instance_class" {
   description = "RDS instance class"
   type        = string
-  default     = "db.t4g.micro"  # Free tier eligible / cost-optimized for dev
+  default     = "db.t4g.micro" # Free tier eligible / cost-optimized for dev
   # Production: db.t4g.small, db.r6g.large, etc.
 }
 
@@ -89,7 +89,7 @@ variable "common_tags" {
   description = "Common tags for all resources"
   type        = map(string)
   default = {
-    Project    = "WaterApps"
-    ManagedBy  = "Terraform"
+    Project   = "WaterApps"
+    ManagedBy = "Terraform"
   }
 }

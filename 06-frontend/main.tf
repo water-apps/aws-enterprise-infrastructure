@@ -12,7 +12,7 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
-  
+
   default_tags {
     tags = var.common_tags
   }
@@ -108,7 +108,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   default_root_object = "index.html"
   price_class         = var.environment == "production" ? "PriceClass_All" : "PriceClass_100"
   comment             = "${var.environment} WaterApps Frontend"
-  
+
   aliases = var.domain_name != null ? [var.domain_name] : []
 
   origin {
@@ -132,8 +132,8 @@ resource "aws_cloudfront_distribution" "frontend" {
     }
 
     min_ttl     = 0
-    default_ttl = var.environment == "production" ? 86400 : 3600  # 1 day prod, 1 hour dev
-    max_ttl     = var.environment == "production" ? 31536000 : 86400  # 1 year prod, 1 day dev
+    default_ttl = var.environment == "production" ? 86400 : 3600     # 1 day prod, 1 hour dev
+    max_ttl     = var.environment == "production" ? 31536000 : 86400 # 1 year prod, 1 day dev
 
     function_association {
       event_type   = "viewer-request"
@@ -162,9 +162,9 @@ resource "aws_cloudfront_distribution" "frontend" {
 
   viewer_certificate {
     cloudfront_default_certificate = var.acm_certificate_arn == null
-    acm_certificate_arn           = var.acm_certificate_arn
-    ssl_support_method            = var.acm_certificate_arn != null ? "sni-only" : null
-    minimum_protocol_version      = var.acm_certificate_arn != null ? "TLSv1.2_2021" : null
+    acm_certificate_arn            = var.acm_certificate_arn
+    ssl_support_method             = var.acm_certificate_arn != null ? "sni-only" : null
+    minimum_protocol_version       = var.acm_certificate_arn != null ? "TLSv1.2_2021" : null
   }
 
   tags = {

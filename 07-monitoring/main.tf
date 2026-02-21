@@ -12,7 +12,7 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
-  
+
   default_tags {
     tags = var.common_tags
   }
@@ -110,7 +110,7 @@ resource "aws_cloudwatch_dashboard" "main" {
           ]
           period = 300
           stat   = "Average"
-          region = "us-east-1"  # CloudFront metrics are in us-east-1
+          region = "us-east-1" # CloudFront metrics are in us-east-1
           title  = "CloudFront Distribution"
         }
       }
@@ -300,7 +300,7 @@ resource "aws_ce_anomaly_subscription" "cost_alerts" {
   threshold_expression {
     dimension {
       key           = "ANOMALY_TOTAL_IMPACT_ABSOLUTE"
-      values        = ["100"]  # Alert if anomaly cost > $100
+      values        = ["100"] # Alert if anomaly cost > $100
       match_options = ["GREATER_THAN_OR_EQUAL"]
     }
   }

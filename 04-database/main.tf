@@ -12,7 +12,7 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
-  
+
   default_tags {
     tags = var.common_tags
   }
@@ -37,17 +37,17 @@ resource "aws_db_parameter_group" "postgres" {
   # Optimize for application workload
   parameter {
     name  = "shared_buffers"
-    value = "{DBInstanceClassMemory/32768}"  # 25% of RAM
+    value = "{DBInstanceClassMemory/32768}" # 25% of RAM
   }
 
   parameter {
     name  = "effective_cache_size"
-    value = "{DBInstanceClassMemory/16384}"  # 75% of RAM
+    value = "{DBInstanceClassMemory/16384}" # 75% of RAM
   }
 
   parameter {
     name  = "maintenance_work_mem"
-    value = "2097152"  # 2GB
+    value = "2097152" # 2GB
   }
 
   parameter {
@@ -57,7 +57,7 @@ resource "aws_db_parameter_group" "postgres" {
 
   parameter {
     name  = "wal_buffers"
-    value = "16384"  # 16MB
+    value = "16384" # 16MB
   }
 
   parameter {
@@ -67,7 +67,7 @@ resource "aws_db_parameter_group" "postgres" {
 
   parameter {
     name  = "random_page_cost"
-    value = "1.1"  # Optimized for SSD
+    value = "1.1" # Optimized for SSD
   }
 
   parameter {
@@ -77,7 +77,7 @@ resource "aws_db_parameter_group" "postgres" {
 
   parameter {
     name  = "work_mem"
-    value = "10485"  # 10MB per operation
+    value = "10485" # 10MB per operation
   }
 
   parameter {
@@ -96,10 +96,10 @@ resource "aws_db_instance" "main" {
   identifier = "${var.environment}-waterapps-db"
 
   # Engine
-  engine               = "postgres"
-  engine_version       = "16.1"
-  instance_class       = var.db_instance_class
-  
+  engine         = "postgres"
+  engine_version = "16.1"
+  instance_class = var.db_instance_class
+
   # Storage
   allocated_storage     = var.db_allocated_storage
   max_allocated_storage = var.db_max_allocated_storage
@@ -116,9 +116,9 @@ resource "aws_db_instance" "main" {
   port     = 5432
 
   # High Availability
-  multi_az               = var.environment == "production" ? true : false
-  availability_zone      = var.environment == "production" ? null : var.availability_zones[0]
-  
+  multi_az          = var.environment == "production" ? true : false
+  availability_zone = var.environment == "production" ? null : var.availability_zones[0]
+
   # Network
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [var.rds_security_group_id]
@@ -126,7 +126,7 @@ resource "aws_db_instance" "main" {
 
   # Backup
   backup_retention_period   = var.environment == "production" ? 30 : 7
-  backup_window             = "03:00-04:00"  # Sydney time: 1-2 PM
+  backup_window             = "03:00-04:00" # Sydney time: 1-2 PM
   maintenance_window        = "Mon:04:00-Mon:05:00"
   copy_tags_to_snapshot     = true
   skip_final_snapshot       = var.environment == "development"
@@ -145,11 +145,11 @@ resource "aws_db_instance" "main" {
 
   # Parameters
   parameter_group_name = aws_db_parameter_group.postgres.name
-  
+
   # Options
   auto_minor_version_upgrade = true
   deletion_protection        = var.environment == "production"
-  
+
   # Apply changes immediately in dev, during maintenance window in prod
   apply_immediately = var.environment == "development"
 
@@ -160,7 +160,7 @@ resource "aws_db_instance" "main" {
 
   lifecycle {
     ignore_changes = [
-      password  # Prevent recreation when password rotates
+      password # Prevent recreation when password rotates
     ]
   }
 }
@@ -200,29 +200,29 @@ resource "aws_db_instance" "read_replica" {
   count = var.enable_read_replica && var.environment == "production" ? 1 : 0
 
   identifier = "${var.environment}-waterapps-db-replica"
-  
+
   replicate_source_db = aws_db_instance.main.identifier
   instance_class      = var.db_instance_class
-  
+
   # Can be in different AZ for better distribution
   availability_zone = var.availability_zones[1]
-  
+
   # Storage
   storage_encrypted = true
   kms_key_id        = var.kms_key_arn
-  
+
   # Network
   publicly_accessible = false
-  
+
   # Performance Insights
   performance_insights_enabled          = true
   performance_insights_retention_period = 7
   performance_insights_kms_key_id       = var.kms_key_arn
-  
+
   # Monitoring
   monitoring_interval = 60
   monitoring_role_arn = aws_iam_role.rds_monitoring[0].arn
-  
+
   auto_minor_version_upgrade = true
   skip_final_snapshot        = true
 
@@ -264,7 +264,7 @@ resource "aws_cloudwatch_metric_alarm" "database_storage" {
   namespace           = "AWS/RDS"
   period              = 300
   statistic           = "Average"
-  threshold           = 10737418240  # 10 GB
+  threshold           = 10737418240 # 10 GB
   alarm_description   = "This metric monitors RDS free storage space"
   alarm_actions       = var.alarm_sns_topic_arn != null ? [var.alarm_sns_topic_arn] : []
 
@@ -286,7 +286,7 @@ resource "aws_cloudwatch_metric_alarm" "database_connections" {
   namespace           = "AWS/RDS"
   period              = 300
   statistic           = "Average"
-  threshold           = var.max_db_connections * 0.8  # 80% of max connections
+  threshold           = var.max_db_connections * 0.8 # 80% of max connections
   alarm_description   = "This metric monitors RDS database connections"
   alarm_actions       = var.alarm_sns_topic_arn != null ? [var.alarm_sns_topic_arn] : []
 

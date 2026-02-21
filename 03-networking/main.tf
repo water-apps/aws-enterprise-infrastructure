@@ -12,7 +12,7 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
-  
+
   default_tags {
     tags = var.common_tags
   }
@@ -167,7 +167,7 @@ resource "aws_route_table_association" "public" {
 resource "aws_route_table_association" "private" {
   count = length(aws_subnet.private)
 
-  subnet_id = aws_subnet.private[count.index].id
+  subnet_id      = aws_subnet.private[count.index].id
   route_table_id = var.environment == "production" ? aws_route_table.private[count.index].id : aws_route_table.private[0].id
 }
 
@@ -228,7 +228,8 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
 
 # ALB Security Group
 resource "aws_security_group" "alb" {
-  name_description = "${var.environment}-alb-sg"
+  name        = "${var.environment}-alb-sg"
+  description = "Security group for ALB"
   vpc_id      = aws_vpc.main.id
 
   ingress {
@@ -263,7 +264,8 @@ resource "aws_security_group" "alb" {
 
 # ECS Tasks Security Group
 resource "aws_security_group" "ecs_tasks" {
-  name_description = "${var.environment}-ecs-tasks-sg"
+  name        = "${var.environment}-ecs-tasks-sg"
+  description = "Security group for ECS tasks"
   vpc_id      = aws_vpc.main.id
 
   ingress {
@@ -290,7 +292,8 @@ resource "aws_security_group" "ecs_tasks" {
 
 # RDS Security Group
 resource "aws_security_group" "rds" {
-  name_description = "${var.environment}-rds-sg"
+  name        = "${var.environment}-rds-sg"
+  description = "Security group for RDS"
   vpc_id      = aws_vpc.main.id
 
   ingress {
@@ -317,7 +320,8 @@ resource "aws_security_group" "rds" {
 
 # VPC Endpoints Security Group
 resource "aws_security_group" "vpc_endpoints" {
-  name_description = "${var.environment}-vpc-endpoints-sg"
+  name        = "${var.environment}-vpc-endpoints-sg"
+  description = "Security group for VPC endpoints"
   vpc_id      = aws_vpc.main.id
 
   ingress {

@@ -12,7 +12,7 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
-  
+
   default_tags {
     tags = var.common_tags
   }
@@ -132,8 +132,8 @@ resource "aws_lb" "main" {
   security_groups    = [var.alb_security_group_id]
   subnets            = var.public_subnet_ids
 
-  enable_deletion_protection = var.environment == "production"
-  enable_http2              = true
+  enable_deletion_protection       = var.environment == "production"
+  enable_http2                     = true
   enable_cross_zone_load_balancing = true
 
   drop_invalid_header_fields = true
@@ -328,14 +328,12 @@ resource "aws_ecs_service" "backend" {
     container_port   = 8080
   }
 
-  deployment_configuration {
-    maximum_percent         = 200
-    minimum_healthy_percent = 100
-    
-    deployment_circuit_breaker {
-      enable   = true
-      rollback = true
-    }
+  deployment_maximum_percent         = 200
+  deployment_minimum_healthy_percent = 100
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
   }
 
   enable_execute_command = var.environment == "development"

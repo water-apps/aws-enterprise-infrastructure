@@ -83,14 +83,14 @@ variable "acm_certificate_arn" {
 variable "task_cpu" {
   description = "ECS task CPU units"
   type        = string
-  default     = "256"  # 0.25 vCPU
+  default     = "256" # 0.25 vCPU
   # Options: 256, 512, 1024, 2048, 4096
 }
 
 variable "task_memory" {
   description = "ECS task memory in MB"
   type        = string
-  default     = "512"  # 512 MB
+  default     = "512" # 512 MB
   # Options depend on CPU: 256 CPU → 512-2048 MB
 }
 
@@ -116,7 +116,7 @@ variable "common_tags" {
   description = "Common tags for all resources"
   type        = map(string)
   default = {
-    Project    = "WaterApps"
-    ManagedBy  = "Terraform"
+    Project   = "WaterApps"
+    ManagedBy = "Terraform"
   }
 }

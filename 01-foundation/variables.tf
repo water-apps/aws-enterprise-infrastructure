@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "AWS region for resources"
   type        = string
-  default     = "ap-southeast-2"  # Sydney region
+  default     = "ap-southeast-2" # Sydney region
 }
 
 variable "dev_account_email" {
@@ -37,10 +37,10 @@ variable "common_tags" {
   description = "Common tags for all resources"
   type        = map(string)
   default = {
-    Project     = "WaterApps"
-    ManagedBy   = "Terraform"
-    Owner       = "VK"
-    Company     = "WaterApps"
-    CostCenter  = "Engineering"
+    Project    = "WaterApps"
+    ManagedBy  = "Terraform"
+    Owner      = "VK"
+    Company    = "WaterApps"
+    CostCenter = "Engineering"
   }
 }
