@@ -1,0 +1,6 @@
+# Protect platform workflows and Terraform stage definitions.
+
+.github/workflows/** @vkaushik13
+**/*.tf @vkaushik13
+**/*.tfvars @vkaushik13
+README.md @vkaushik13
