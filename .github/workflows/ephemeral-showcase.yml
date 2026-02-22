@@ -33,7 +33,7 @@ jobs:
     timeout-minutes: 180
     env:
       AWS_REGION: ${{ inputs.aws_region }}
-      ENV_NAME: development
+      ENV_NAME: ci-${{ github.run_id }}
       ALERT_EMAIL: ${{ inputs.alert_email }}
     steps:
       - uses: actions/checkout@v4
@@ -83,6 +83,7 @@ jobs:
             echo "## Ephemeral Showcase Pipeline"
             echo "- Scope: modules \`02-security\` through \`07-monitoring\`"
             echo "- \`01-foundation\` is intentionally excluded (AWS Organizations/account creation is not ephemeral-safe)"
+            echo "- Environment namespace: \`${ENV_NAME}\` (unique per workflow run)"
             echo "- ECS desired count is forced to \`0\` during CI to reduce runtime cost"
             echo "- Destroy step runs automatically when enabled"
           } >> "$GITHUB_STEP_SUMMARY"

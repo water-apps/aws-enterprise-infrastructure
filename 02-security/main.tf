@@ -39,7 +39,7 @@ resource "aws_kms_alias" "main" {
 resource "aws_secretsmanager_secret" "db_master_password" {
   name                    = "${var.environment}/waterapps/db/master-password"
   description             = "Master password for RDS database"
-  recovery_window_in_days = var.environment == "production" ? 30 : 7
+  recovery_window_in_days = var.environment == "production" ? 30 : 0
   kms_key_id              = aws_kms_key.main.arn
 
   tags = {
@@ -64,7 +64,7 @@ resource "random_password" "db_master_password" {
 resource "aws_secretsmanager_secret" "app_config" {
   name                    = "${var.environment}/waterapps/app/config"
   description             = "Application configuration secrets"
-  recovery_window_in_days = var.environment == "production" ? 30 : 7
+  recovery_window_in_days = var.environment == "production" ? 30 : 0
   kms_key_id              = aws_kms_key.main.arn
 
   tags = {
@@ -266,7 +266,7 @@ resource "aws_iam_user_policy" "cicd" {
 resource "aws_secretsmanager_secret" "cicd_credentials" {
   name                    = "${var.environment}/waterapps/cicd/credentials"
   description             = "CI/CD IAM user credentials"
-  recovery_window_in_days = 7
+  recovery_window_in_days = var.environment == "production" ? 30 : 0
 
   tags = {
     Name        = "${var.environment}-cicd-credentials"

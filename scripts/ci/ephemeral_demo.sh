@@ -71,6 +71,10 @@ destroy_module() {
     log "skip ${dir} (no generated tfvars)"
     return 0
   fi
+  if [[ ! -f "${ROOT_DIR}/${dir}/terraform.tfstate" && ! -f "${ROOT_DIR}/${dir}/terraform.tfstate.backup" ]]; then
+    log "skip ${dir} (no local state; module was not applied)"
+    return 0
+  fi
   set +e
   run_tf "${dir}" destroy -auto-approve -input=false
   local rc=$?
@@ -268,7 +272,7 @@ case "${1:-}" in
 Usage: $(basename "$0") <up|smoke|destroy>
 
 Environment variables:
-  ENV_NAME      Terraform environment value (default: development)
+  ENV_NAME      Terraform environment value (default: development; CI workflow sets unique ci-<run_id>)
   AWS_REGION    AWS region (default: ap-southeast-2)
   ALERT_EMAIL   Required for up (07-monitoring SNS subscription)
   DRY_RUN       If true, use plan instead of apply in up
