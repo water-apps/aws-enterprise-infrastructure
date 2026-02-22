@@ -49,6 +49,12 @@ variable "db_instance_class" {
   # Production: db.t4g.small, db.r6g.large, etc.
 }
 
+variable "db_engine_version" {
+  description = "PostgreSQL engine version"
+  type        = string
+  default     = "16.1"
+}
+
 variable "db_allocated_storage" {
   description = "Allocated storage in GB"
   type        = number

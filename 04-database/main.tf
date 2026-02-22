@@ -18,6 +18,10 @@ provider "aws" {
   }
 }
 
+locals {
+  is_ephemeral = startswith(var.environment, "ci-")
+}
+
 # DB Subnet Group
 resource "aws_db_subnet_group" "main" {
   name       = "${var.environment}-db-subnet-group"
@@ -36,53 +40,63 @@ resource "aws_db_parameter_group" "postgres" {
 
   # Optimize for application workload
   parameter {
-    name  = "shared_buffers"
-    value = "{DBInstanceClassMemory/32768}" # 25% of RAM
+    name         = "shared_buffers"
+    value        = "{DBInstanceClassMemory/32768}" # 25% of RAM
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "effective_cache_size"
-    value = "{DBInstanceClassMemory/16384}" # 75% of RAM
+    name         = "effective_cache_size"
+    value        = "{DBInstanceClassMemory/16384}" # 75% of RAM
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "maintenance_work_mem"
-    value = "2097152" # 2GB
+    name         = "maintenance_work_mem"
+    value        = "2097152" # 2GB
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "checkpoint_completion_target"
-    value = "0.9"
+    name         = "checkpoint_completion_target"
+    value        = "0.9"
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "wal_buffers"
-    value = "16384" # 16MB
+    name         = "wal_buffers"
+    value        = "16384" # 16MB
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "default_statistics_target"
-    value = "100"
+    name         = "default_statistics_target"
+    value        = "100"
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "random_page_cost"
-    value = "1.1" # Optimized for SSD
+    name         = "random_page_cost"
+    value        = "1.1" # Optimized for SSD
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "effective_io_concurrency"
-    value = "200"
+    name         = "effective_io_concurrency"
+    value        = "200"
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "work_mem"
-    value = "10485" # 10MB per operation
+    name         = "work_mem"
+    value        = "10485" # 10MB per operation
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "max_connections"
-    value = var.max_db_connections
+    name         = "max_connections"
+    value        = var.max_db_connections
+    apply_method = "pending-reboot"
   }
 
   tags = {
@@ -97,7 +111,7 @@ resource "aws_db_instance" "main" {
 
   # Engine
   engine         = "postgres"
-  engine_version = "16.1"
+  engine_version = var.db_engine_version
   instance_class = var.db_instance_class
 
   # Storage
@@ -125,13 +139,13 @@ resource "aws_db_instance" "main" {
   publicly_accessible    = false
 
   # Backup
-  backup_retention_period   = var.environment == "production" ? 30 : 7
+  backup_retention_period   = var.environment == "production" ? 30 : (local.is_ephemeral ? 0 : 7)
   backup_window             = "03:00-04:00" # Sydney time: 1-2 PM
   maintenance_window        = "Mon:04:00-Mon:05:00"
   copy_tags_to_snapshot     = true
-  skip_final_snapshot       = var.environment == "development"
+  skip_final_snapshot       = var.environment == "development" || local.is_ephemeral
   final_snapshot_identifier = var.environment == "production" ? "${var.environment}-waterapps-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}" : null
-  delete_automated_backups  = var.environment == "development"
+  delete_automated_backups  = var.environment == "development" || local.is_ephemeral
 
   # Performance Insights
   performance_insights_enabled          = var.environment == "production"
@@ -151,7 +165,7 @@ resource "aws_db_instance" "main" {
   deletion_protection        = var.environment == "production"
 
   # Apply changes immediately in dev, during maintenance window in prod
-  apply_immediately = var.environment == "development"
+  apply_immediately = var.environment == "development" || local.is_ephemeral
 
   tags = {
     Name        = "${var.environment}-waterapps-db"

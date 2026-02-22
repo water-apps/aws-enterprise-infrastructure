@@ -2,6 +2,17 @@
 
 > Production-ready AWS infrastructure template with enterprise security practices from financial services organizations (RBA, Westpac, CBA). Multi-account organization, ECS Fargate, RDS PostgreSQL, CloudFront CDN, comprehensive monitoring. Optimized for startups: $100-150/month dev, $300-400/month production.
 
+## Public Reference Notice
+
+This repository is maintained as a public reference architecture and learning asset. Patterns are derived from real enterprise delivery experience, but implementation details may be generalized or adapted for safe public sharing.
+
+## Repository Metadata
+
+- Standard name: `waterapps-20-infra-enterprise`
+- Depends on: `waterapps-10-bootstrap-oidc-iam` (for CI/CD OIDC/IAM role)
+- Provides: Shared/core AWS infrastructure platform (networking, database, compute, frontend, monitoring)
+- Deploy order: `20`
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Terraform](https://img.shields.io/badge/Terraform-1.5+-purple.svg)](https://www.terraform.io/)
 [![AWS](https://img.shields.io/badge/AWS-Multiple%20Services-orange.svg)](https://aws.amazon.com/)
@@ -59,6 +70,29 @@ cd aws-enterprise-infrastructure
 
 ## 🏗️ Architecture Overview
 
+### Mermaid Architecture (Client-Friendly)
+
+```mermaid
+flowchart TB
+    ORG["AWS Organization"] --> DEV["Dev Account"]
+    ORG --> PROD["Prod Account"]
+    ORG --> SHARED["Shared Services Account"]
+
+    DEV --> DEVVPC["VPC"]
+    PROD --> PRODVPC["VPC"]
+    SHARED --> SHAREDVPC["CI/CD / Shared Services"]
+
+    DEVVPC --> DEVECS["ECS Fargate"]
+    DEVVPC --> DEVRDS["RDS PostgreSQL"]
+    DEVVPC --> DEVCF["S3 + CloudFront"]
+
+    PRODVPC --> PRODECS["ECS Fargate"]
+    PRODVPC --> PRODRDS["RDS PostgreSQL (Multi-AZ)"]
+    PRODVPC --> PRODCF["S3 + CloudFront"]
+
+    SHAREDVPC --> OBS["Monitoring / CI/CD Tooling"]
+```
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     AWS Organization                         │
@@ -112,6 +146,18 @@ aws-enterprise-infrastructure/
 
 **Deploy in order:** 01 → 02 → 03 → 04 → 05 → 06 → 07  
 **Destroy in reverse:** 07 → 06 → 05 → 04 → 03 → 02
+
+### Deployment Order (Mermaid)
+
+```mermaid
+flowchart LR
+    F["01 Foundation"] --> S["02 Security"]
+    S --> N["03 Networking"]
+    N --> D["04 Database"]
+    D --> C["05 Compute"]
+    C --> FE["06 Frontend"]
+    FE --> M["07 Monitoring"]
+```
 
 ## 🚀 Deployment Guide
 

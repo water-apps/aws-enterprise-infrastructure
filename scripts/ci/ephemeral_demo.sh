@@ -6,6 +6,7 @@ ENV_NAME="${ENV_NAME:-development}"
 AWS_REGION="${AWS_REGION:-ap-southeast-2}"
 ALERT_EMAIL="${ALERT_EMAIL:-}"
 DRY_RUN="${DRY_RUN:-false}"
+DB_ENGINE_VERSION="${DB_ENGINE_VERSION:-}"
 
 log() {
   printf '[ephemeral-demo] %s\n' "$*"
@@ -20,6 +21,25 @@ require_cmds() {
   command -v terraform >/dev/null 2>&1 || die "terraform not installed"
   command -v aws >/dev/null 2>&1 || die "aws CLI not installed"
   command -v jq >/dev/null 2>&1 || die "jq not installed"
+}
+
+resolve_db_engine_version() {
+  if [[ -n "${DB_ENGINE_VERSION}" ]]; then
+    log "Using caller-provided DB_ENGINE_VERSION=${DB_ENGINE_VERSION}"
+    return 0
+  fi
+
+  DB_ENGINE_VERSION="$(
+    aws rds describe-db-engine-versions \
+      --engine postgres \
+      --region "${AWS_REGION}" \
+      --output json \
+      | jq -r '.DBEngineVersions[].EngineVersion | select(startswith("16."))' \
+      | sort -V \
+      | tail -n1
+  )"
+  [[ -n "${DB_ENGINE_VERSION}" && "${DB_ENGINE_VERSION}" != "null" ]] || die "No supported postgres 16.x engine version found in ${AWS_REGION}"
+  log "Resolved Postgres engine version for ${AWS_REGION}: ${DB_ENGINE_VERSION}"
 }
 
 run_tf() {
@@ -66,19 +86,34 @@ apply_module() {
 
 destroy_module() {
   local dir="$1"
+  local attempts=3
+  local attempt=1
   log "terraform destroy ${dir}"
   if [[ ! -f "${ROOT_DIR}/${dir}/terraform.tfvars" ]]; then
     log "skip ${dir} (no generated tfvars)"
     return 0
   fi
-  set +e
-  run_tf "${dir}" destroy -auto-approve -input=false
-  local rc=$?
-  set -e
-  if [[ $rc -ne 0 ]]; then
-    log "destroy failed for ${dir} (continuing)"
-    return $rc
+  if [[ ! -f "${ROOT_DIR}/${dir}/terraform.tfstate" && ! -f "${ROOT_DIR}/${dir}/terraform.tfstate.backup" ]]; then
+    log "skip ${dir} (no local state; module was not applied)"
+    return 0
   fi
+  while (( attempt <= attempts )); do
+    set +e
+    run_tf "${dir}" destroy -auto-approve -input=false
+    local rc=$?
+    set -e
+    if [[ $rc -eq 0 ]]; then
+      return 0
+    fi
+    if (( attempt < attempts )); then
+      log "destroy failed for ${dir} on attempt ${attempt}/${attempts}; retrying after delay"
+      sleep 20
+    else
+      log "destroy failed for ${dir} after ${attempts} attempts (continuing)"
+      return $rc
+    fi
+    attempt=$((attempt + 1))
+  done
 }
 
 generate_02_security_tfvars() {
@@ -109,6 +144,7 @@ database_subnet_ids = $(tf_out_json 03-networking database_subnet_ids)
 rds_security_group_id = "$(tf_out_raw 03-networking rds_security_group_id)"
 kms_key_arn = "$(tf_out_raw 02-security kms_key_arn)"
 db_master_password = "${db_password}"
+db_engine_version = "${DB_ENGINE_VERSION}"
 EOF
 }
 
@@ -164,6 +200,7 @@ preflight() {
   require_cmds
   aws sts get-caller-identity >/dev/null
   log "Using AWS identity: $(aws sts get-caller-identity --query Arn --output text)"
+  resolve_db_engine_version
 }
 
 up() {
@@ -268,10 +305,11 @@ case "${1:-}" in
 Usage: $(basename "$0") <up|smoke|destroy>
 
 Environment variables:
-  ENV_NAME      Terraform environment value (default: development)
+  ENV_NAME      Terraform environment value (default: development; CI workflow sets unique ci-<run_id>)
   AWS_REGION    AWS region (default: ap-southeast-2)
   ALERT_EMAIL   Required for up (07-monitoring SNS subscription)
   DRY_RUN       If true, use plan instead of apply in up
+  DB_ENGINE_VERSION  Optional Postgres engine version override (default: latest supported 16.x in region for CI demo)
 USAGE
     exit 2
     ;;
