@@ -1,4 +1,4 @@
-name: "Terraform PR Plan (Low Cost)"
+name: "Terraform PR Plan (Low Cost)" # path-touch to validate workflow
 
 on:
   pull_request:
