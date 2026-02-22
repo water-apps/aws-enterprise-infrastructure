@@ -108,6 +108,10 @@ jobs:
     steps:
       - name: Check results
         run: |
+          if [ "${{ needs.validate.result }}" != "success" ] || [ "${{ needs.security-scan.result }}" != "success" ]; then
+            echo "::error::Terraform CI failed (validate=${{ needs.validate.result }}, security=${{ needs.security-scan.result }})"
+            exit 1
+          fi
           echo "## Terraform CI Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
