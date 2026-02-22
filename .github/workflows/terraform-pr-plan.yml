@@ -14,8 +14,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  plan-standalone-modules:
-    name: "Plan 02 + 03 (PR)"
+  plan-all-stages:
+    name: "Plan 01..07 (PR, Best Effort)"
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -45,9 +45,14 @@ jobs:
           role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
           role-session-name: gha-pr-plan
 
-      - name: Generate minimal tfvars (02,03)
+      - name: Generate minimal tfvars (01..07)
         if: ${{ steps.oidc.outputs.configured == 'true' }}
         run: |
+          cat > 01-foundation/terraform.tfvars <<'EOF'
+          environment = "development"
+          aws_region  = "ap-southeast-2"
+          EOF
+
           cat > 02-security/terraform.tfvars <<'EOF'
           environment = "development"
           aws_region  = "ap-southeast-2"
@@ -57,37 +62,95 @@ jobs:
           environment = "development"
           aws_region  = "ap-southeast-2"
           EOF
+          cat > 04-database/terraform.tfvars <<'EOF'
+          environment = "development"
+          aws_region  = "ap-southeast-2"
+          EOF
 
-      - name: Terraform plan 02-security
+          cat > 05-compute/terraform.tfvars <<'EOF'
+          environment = "development"
+          aws_region  = "ap-southeast-2"
+          EOF
+
+          cat > 06-frontend/terraform.tfvars <<'EOF'
+          environment = "development"
+          aws_region  = "ap-southeast-2"
+          EOF
+
+          cat > 07-monitoring/terraform.tfvars <<'EOF'
+          environment = "development"
+          aws_region  = "ap-southeast-2"
+          EOF
+
+      - name: Terraform plan all stages (best effort)
         if: ${{ steps.oidc.outputs.configured == 'true' }}
         run: |
-          cd 02-security
-          terraform init -input=false
-          terraform plan -input=false -no-color | tee ../plan-02-security.txt
+          mkdir -p pr-plan-artifacts
+          : > pr-plan-artifacts/stage-results.tsv
+          echo -e "stage\tresult\tinit_exit\tplan_exit\tartifact" > pr-plan-artifacts/stage-results.tsv
 
-      - name: Terraform plan 03-networking
-        if: ${{ steps.oidc.outputs.configured == 'true' }}
-        run: |
-          cd 03-networking
-          terraform init -input=false
-          terraform plan -input=false -no-color | tee ../plan-03-networking.txt
+          for stage in $(find . -maxdepth 1 -type d -name '[0-9][0-9]-*' | sort); do
+            stage="${stage#./}"
+            safe_name="${stage//\//-}"
+            log_file="pr-plan-artifacts/${safe_name}.plan.txt"
+            init_log="pr-plan-artifacts/${safe_name}.init.txt"
+            init_exit=0
+            plan_exit=0
+
+            echo "### ${stage}" | tee -a "$log_file"
+
+            (
+              cd "$stage"
+              terraform init -input=false -no-color
+            ) >"$init_log" 2>&1 || init_exit=$?
+
+            if [ "$init_exit" -eq 0 ]; then
+              (
+                cd "$stage"
+                terraform plan -input=false -lock=false -no-color
+              ) >"$log_file" 2>&1 || plan_exit=$?
+            else
+              {
+                echo "Terraform init failed for ${stage}"
+                echo
+                cat "$init_log"
+              } >"$log_file"
+              plan_exit=999
+            fi
+
+            if [ "$init_exit" -eq 0 ] && [ "$plan_exit" -eq 0 ]; then
+              result="success"
+            else
+              result="failed"
+            fi
+
+            echo -e "${stage}\t${result}\t${init_exit}\t${plan_exit}\t${log_file}" >> pr-plan-artifacts/stage-results.tsv
+          done
 
       - name: Upload plan artifacts
         if: ${{ steps.oidc.outputs.configured == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: terraform-pr-plans
-          path: |
-            plan-02-security.txt
-            plan-03-networking.txt
+          path: pr-plan-artifacts/
 
       - name: PR summary (planned)
         if: ${{ steps.oidc.outputs.configured == 'true' }}
         run: |
+          successes=$(awk -F'\t' 'NR>1 && $2=="success" {c++} END{print c+0}' pr-plan-artifacts/stage-results.tsv)
+          failures=$(awk -F'\t' 'NR>1 && $2=="failed" {c++} END{print c+0}' pr-plan-artifacts/stage-results.tsv)
           {
             echo "## Terraform PR Plan (Low Cost)"
-            echo "- Planned standalone modules only: 02-security, 03-networking"
+            echo "- Planned all detected stage directories (01..07) in best-effort mode"
+            echo "- Successes: ${successes}"
+            echo "- Failures: ${failures}"
+            echo ""
+            echo "| Stage | Result | Init Exit | Plan Exit |"
+            echo "|---|---|---:|---:|"
+            awk -F'\t' 'NR>1 { printf("| %s | %s | %s | %s |\n", $1, $2, $3, $4) }' pr-plan-artifacts/stage-results.tsv
+            echo ""
             echo "- Full-stack apply/test/destroy is available via the manual workflow: Ephemeral Showcase (Apply, Test, Destroy)"
+            echo "- Review uploaded artifact 'terraform-pr-plans' for per-stage plan logs"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: PR summary (skipped)
@@ -101,4 +164,4 @@ jobs:
 
       - name: Cleanup generated tfvars
         if: always()
-        run: rm -f 02-security/terraform.tfvars 03-networking/terraform.tfvars
+        run: rm -f 01-foundation/terraform.tfvars 02-security/terraform.tfvars 03-networking/terraform.tfvars 04-database/terraform.tfvars 05-compute/terraform.tfvars 06-frontend/terraform.tfvars 07-monitoring/terraform.tfvars
