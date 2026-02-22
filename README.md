@@ -2,6 +2,13 @@
 
 > Production-ready AWS infrastructure template with enterprise security practices from financial services organizations (RBA, Westpac, CBA). Multi-account organization, ECS Fargate, RDS PostgreSQL, CloudFront CDN, comprehensive monitoring. Optimized for startups: $100-150/month dev, $300-400/month production.
 
+## Repository Metadata
+
+- Standard name: `waterapps-20-infra-enterprise`
+- Depends on: `waterapps-10-bootstrap-oidc-iam` (for CI/CD OIDC/IAM role)
+- Provides: Shared/core AWS infrastructure platform (networking, database, compute, frontend, monitoring)
+- Deploy order: `20`
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Terraform](https://img.shields.io/badge/Terraform-1.5+-purple.svg)](https://www.terraform.io/)
 [![AWS](https://img.shields.io/badge/AWS-Multiple%20Services-orange.svg)](https://aws.amazon.com/)
