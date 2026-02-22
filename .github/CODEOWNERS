@@ -1,0 +1,14 @@
+# Default owner for this repo
+* @vkaushik13
+
+# Infrastructure and CI/CD controls
+.github/workflows/** @vkaushik13
+01-*/** @vkaushik13
+02-*/** @vkaushik13
+03-*/** @vkaushik13
+04-*/** @vkaushik13
+05-*/** @vkaushik13
+06-*/** @vkaushik13
+07-*/** @vkaushik13
+scripts/** @vkaushik13
+
