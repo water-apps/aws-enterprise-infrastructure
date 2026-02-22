@@ -18,6 +18,10 @@ provider "aws" {
   }
 }
 
+locals {
+  is_ephemeral = startswith(var.environment, "ci-")
+}
+
 # DB Subnet Group
 resource "aws_db_subnet_group" "main" {
   name       = "${var.environment}-db-subnet-group"
@@ -135,13 +139,13 @@ resource "aws_db_instance" "main" {
   publicly_accessible    = false
 
   # Backup
-  backup_retention_period   = var.environment == "production" ? 30 : 7
+  backup_retention_period   = var.environment == "production" ? 30 : (local.is_ephemeral ? 0 : 7)
   backup_window             = "03:00-04:00" # Sydney time: 1-2 PM
   maintenance_window        = "Mon:04:00-Mon:05:00"
   copy_tags_to_snapshot     = true
-  skip_final_snapshot       = var.environment == "development"
+  skip_final_snapshot       = var.environment == "development" || local.is_ephemeral
   final_snapshot_identifier = var.environment == "production" ? "${var.environment}-waterapps-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}" : null
-  delete_automated_backups  = var.environment == "development"
+  delete_automated_backups  = var.environment == "development" || local.is_ephemeral
 
   # Performance Insights
   performance_insights_enabled          = var.environment == "production"
@@ -161,7 +165,7 @@ resource "aws_db_instance" "main" {
   deletion_protection        = var.environment == "production"
 
   # Apply changes immediately in dev, during maintenance window in prod
-  apply_immediately = var.environment == "development"
+  apply_immediately = var.environment == "development" || local.is_ephemeral
 
   tags = {
     Name        = "${var.environment}-waterapps-db"

@@ -86,6 +86,8 @@ apply_module() {
 
 destroy_module() {
   local dir="$1"
+  local attempts=3
+  local attempt=1
   log "terraform destroy ${dir}"
   if [[ ! -f "${ROOT_DIR}/${dir}/terraform.tfvars" ]]; then
     log "skip ${dir} (no generated tfvars)"
@@ -95,14 +97,23 @@ destroy_module() {
     log "skip ${dir} (no local state; module was not applied)"
     return 0
   fi
-  set +e
-  run_tf "${dir}" destroy -auto-approve -input=false
-  local rc=$?
-  set -e
-  if [[ $rc -ne 0 ]]; then
-    log "destroy failed for ${dir} (continuing)"
-    return $rc
-  fi
+  while (( attempt <= attempts )); do
+    set +e
+    run_tf "${dir}" destroy -auto-approve -input=false
+    local rc=$?
+    set -e
+    if [[ $rc -eq 0 ]]; then
+      return 0
+    fi
+    if (( attempt < attempts )); then
+      log "destroy failed for ${dir} on attempt ${attempt}/${attempts}; retrying after delay"
+      sleep 20
+    else
+      log "destroy failed for ${dir} after ${attempts} attempts (continuing)"
+      return $rc
+    fi
+    attempt=$((attempt + 1))
+  done
 }
 
 generate_02_security_tfvars() {

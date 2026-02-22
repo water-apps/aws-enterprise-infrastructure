@@ -18,6 +18,10 @@ provider "aws" {
   }
 }
 
+locals {
+  is_ephemeral = startswith(var.environment, "ci-")
+}
+
 # ECR Repository for backend application
 resource "aws_ecr_repository" "backend" {
   name                 = "${var.environment}-waterapps-backend"
@@ -116,7 +120,9 @@ resource "aws_cloudwatch_log_group" "ecs" {
   name              = "/ecs/${var.environment}-waterapps"
   retention_in_days = var.environment == "production" ? 30 : 7
 
-  kms_key_id = var.kms_key_arn
+  # Ephemeral CI runs use an environment-scoped KMS key without CloudWatch Logs service grants.
+  # Disable CW Logs KMS encryption for ci-* runs to keep the showcase pipeline low-friction and low-cost.
+  kms_key_id = local.is_ephemeral ? null : var.kms_key_arn
 
   tags = {
     Name        = "${var.environment}-ecs-logs"
