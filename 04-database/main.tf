@@ -36,53 +36,63 @@ resource "aws_db_parameter_group" "postgres" {
 
   # Optimize for application workload
   parameter {
-    name  = "shared_buffers"
-    value = "{DBInstanceClassMemory/32768}" # 25% of RAM
+    name         = "shared_buffers"
+    value        = "{DBInstanceClassMemory/32768}" # 25% of RAM
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "effective_cache_size"
-    value = "{DBInstanceClassMemory/16384}" # 75% of RAM
+    name         = "effective_cache_size"
+    value        = "{DBInstanceClassMemory/16384}" # 75% of RAM
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "maintenance_work_mem"
-    value = "2097152" # 2GB
+    name         = "maintenance_work_mem"
+    value        = "2097152" # 2GB
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "checkpoint_completion_target"
-    value = "0.9"
+    name         = "checkpoint_completion_target"
+    value        = "0.9"
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "wal_buffers"
-    value = "16384" # 16MB
+    name         = "wal_buffers"
+    value        = "16384" # 16MB
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "default_statistics_target"
-    value = "100"
+    name         = "default_statistics_target"
+    value        = "100"
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "random_page_cost"
-    value = "1.1" # Optimized for SSD
+    name         = "random_page_cost"
+    value        = "1.1" # Optimized for SSD
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "effective_io_concurrency"
-    value = "200"
+    name         = "effective_io_concurrency"
+    value        = "200"
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "work_mem"
-    value = "10485" # 10MB per operation
+    name         = "work_mem"
+    value        = "10485" # 10MB per operation
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "max_connections"
-    value = var.max_db_connections
+    name         = "max_connections"
+    value        = var.max_db_connections
+    apply_method = "pending-reboot"
   }
 
   tags = {
