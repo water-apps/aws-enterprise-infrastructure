@@ -204,7 +204,8 @@ resource "aws_iam_role_policy" "ecs_task_s3" {
 
 # IAM Role for CI/CD (GitHub Actions)
 resource "aws_iam_user" "cicd" {
-  name = "${var.environment}-cicd-user"
+  count = var.enable_legacy_cicd_iam_user ? 1 : 0
+  name  = "${var.environment}-cicd-user"
 
   tags = {
     Name        = "${var.environment}-cicd-user"
@@ -214,12 +215,14 @@ resource "aws_iam_user" "cicd" {
 }
 
 resource "aws_iam_access_key" "cicd" {
-  user = aws_iam_user.cicd.name
+  count = var.enable_legacy_cicd_iam_user ? 1 : 0
+  user  = aws_iam_user.cicd[0].name
 }
 
 resource "aws_iam_user_policy" "cicd" {
-  name = "${var.environment}-cicd-policy"
-  user = aws_iam_user.cicd.name
+  count = var.enable_legacy_cicd_iam_user ? 1 : 0
+  name  = "${var.environment}-cicd-policy"
+  user  = aws_iam_user.cicd[0].name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -264,6 +267,7 @@ resource "aws_iam_user_policy" "cicd" {
 
 # Store CI/CD credentials in Secrets Manager
 resource "aws_secretsmanager_secret" "cicd_credentials" {
+  count                   = var.enable_legacy_cicd_iam_user ? 1 : 0
   name                    = "${var.environment}/waterapps/cicd/credentials"
   description             = "CI/CD IAM user credentials"
   recovery_window_in_days = var.environment == "production" ? 30 : 0
@@ -275,10 +279,11 @@ resource "aws_secretsmanager_secret" "cicd_credentials" {
 }
 
 resource "aws_secretsmanager_secret_version" "cicd_credentials" {
-  secret_id = aws_secretsmanager_secret.cicd_credentials.id
+  count     = var.enable_legacy_cicd_iam_user ? 1 : 0
+  secret_id = aws_secretsmanager_secret.cicd_credentials[0].id
   secret_string = jsonencode({
-    access_key_id     = aws_iam_access_key.cicd.id
-    secret_access_key = aws_iam_access_key.cicd.secret
+    access_key_id     = aws_iam_access_key.cicd[0].id
+    secret_access_key = aws_iam_access_key.cicd[0].secret
   })
 }
 
@@ -315,11 +320,11 @@ output "ecs_task_role_arn" {
 
 output "cicd_user_name" {
   description = "CI/CD IAM user name"
-  value       = aws_iam_user.cicd.name
+  value       = var.enable_legacy_cicd_iam_user ? aws_iam_user.cicd[0].name : null
 }
 
 output "cicd_credentials_secret_arn" {
   description = "ARN of CI/CD credentials secret"
-  value       = aws_secretsmanager_secret.cicd_credentials.arn
+  value       = var.enable_legacy_cicd_iam_user ? aws_secretsmanager_secret.cicd_credentials[0].arn : null
   sensitive   = true
 }
