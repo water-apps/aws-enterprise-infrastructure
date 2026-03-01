@@ -3,10 +3,10 @@ name: "Terraform — Validate & Security Scan"
 on:
   push:
     branches: [main]
-    paths: ['**/*.tf', '**/*.tfvars.example', '.github/workflows/terraform-ci.yml']
+    paths: ['**/*.tf', '**/*.tfvars.example', '.github/workflows/terraform-ci.yml', '.github/workflows/terraform-pr-plan.yml']
   pull_request:
     branches: [main]
-    paths: ['**/*.tf', '**/*.tfvars.example', '.github/workflows/terraform-ci.yml']
+    paths: ['**/*.tf', '**/*.tfvars.example', '.github/workflows/terraform-ci.yml', '.github/workflows/terraform-pr-plan.yml']
 
 permissions:
   contents: read
