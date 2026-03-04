@@ -323,6 +323,7 @@ By deploying this infrastructure, you'll understand:
 - **[DESTROY_GUIDE.md](DESTROY_GUIDE.md)** - Safe teardown procedures
 - **[COST_OPTIMIZATION.md](COST_OPTIMIZATION.md)** - Budget analysis and savings
 - **[BACKEND_CONFIG.md](BACKEND_CONFIG.md)** - Terraform state management
+- **[docs/TERRAFORM_DRIFT_GOVERNANCE_POLICY.md](docs/TERRAFORM_DRIFT_GOVERNANCE_POLICY.md)** - Drift prevention policy, controls, and remediation model
 
 ## 🤝 Contributing
 

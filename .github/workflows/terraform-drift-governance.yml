@@ -1,0 +1,35 @@
+name: "Terraform Drift Governance Audit"
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift-readiness:
+    name: "Drift Readiness Policy"
+    runs-on: ubuntu-latest
+    env:
+      AWS_OIDC_ROLE_ARN: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+      TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET || '' }}
+      TF_LOCK_TABLE: ${{ vars.TF_LOCK_TABLE || '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run drift-readiness policy checks
+        run: |
+          chmod +x scripts/ci/check_drift_readiness.sh
+          scripts/ci/check_drift_readiness.sh
+
+      - name: Governance summary
+        if: always()
+        run: |
+          {
+            echo "## Terraform Drift Governance Audit"
+            echo "- Validates drift-readiness controls (remote backend, lock table, OIDC role, and no local state files)"
+            echo "- Fails when policy preconditions are not met"
+            echo "- Use docs/TERRAFORM_DRIFT_GOVERNANCE_POLICY.md for remediation"
+          } >> "$GITHUB_STEP_SUMMARY"
