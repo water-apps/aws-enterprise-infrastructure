@@ -21,7 +21,7 @@ jobs:
       AWS_REGION: ap-southeast-2
       AWS_OIDC_ROLE_ARN: ${{ secrets.AWS_OIDC_ROLE_ARN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Check OIDC configuration
         id: oidc
@@ -29,12 +29,12 @@ jobs:
           echo "configured=false" >> "$GITHUB_OUTPUT"
           echo "reason=AWS credential issuance is disabled for pull_request events" >> "$GITHUB_OUTPUT"
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
         if: ${{ steps.oidc.outputs.configured == 'true' }}
         with:
           terraform_version: "1.7.5"
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
         if: ${{ steps.oidc.outputs.configured == 'true' }}
         with:
           aws-region: ${{ env.AWS_REGION }}
@@ -125,7 +125,7 @@ jobs:
 
       - name: Upload plan artifacts
         if: ${{ steps.oidc.outputs.configured == 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: terraform-pr-plans
           path: pr-plan-artifacts/

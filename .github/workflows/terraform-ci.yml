@@ -22,7 +22,7 @@ jobs:
     outputs:
       modules: ${{ steps.find.outputs.modules }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       - id: find
         name: Find Terraform modules
         run: |
@@ -39,9 +39,9 @@ jobs:
       matrix:
         module: ${{ fromJson(needs.detect-modules.outputs.modules) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
@@ -61,16 +61,16 @@ jobs:
     name: "Security Scan — tfsec"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Run tfsec
-        uses: aquasecurity/tfsec-action@v1.0.3
+        uses: aquasecurity/tfsec-action@b466648d6e39e7c75324f25d83891162a721f2d6
         with:
           soft_fail: true
           format: lovely
 
       - name: Run checkov
-        uses: bridgecrewio/checkov-action@v12
+        uses: bridgecrewio/checkov-action@f9b0a2206b0401cad02ac0a66be2a7934a5be838
         with:
           directory: .
           framework: terraform
@@ -82,10 +82,10 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Setup Infracost
-        uses: infracost/actions/setup@v3
+        uses: infracost/actions/setup@e9d6e6cd65e168e76b0de50ff9957d2fe8bb1832
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
         continue-on-error: true

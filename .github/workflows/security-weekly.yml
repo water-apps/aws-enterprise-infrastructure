@@ -14,16 +14,16 @@ jobs:
     name: "tfsec SARIF scan"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Run tfsec with SARIF output
-        uses: aquasecurity/tfsec-action@v1.0.3
+        uses: aquasecurity/tfsec-action@b466648d6e39e7c75324f25d83891162a721f2d6
         with:
           sarif_file: tfsec.sarif
           soft_fail: true
 
       - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@820e3160e279568db735cee8ed8f8e77a6da7818
         with:
           sarif_file: tfsec.sarif
         if: always()
@@ -32,10 +32,10 @@ jobs:
     name: "Checkov compliance scan"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Run checkov
-        uses: bridgecrewio/checkov-action@v12
+        uses: bridgecrewio/checkov-action@f9b0a2206b0401cad02ac0a66be2a7934a5be838
         with:
           directory: .
           framework: terraform
@@ -44,7 +44,7 @@ jobs:
           output_file_path: console,checkov.sarif
 
       - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@820e3160e279568db735cee8ed8f8e77a6da7818
         with:
           sarif_file: checkov.sarif
         if: always()
