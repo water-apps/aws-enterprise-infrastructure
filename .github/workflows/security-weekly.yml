@@ -14,7 +14,7 @@ jobs:
     name: "tfsec SARIF scan"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Run tfsec with SARIF output
         uses: aquasecurity/tfsec-action@b466648d6e39e7c75324f25d83891162a721f2d6
@@ -32,7 +32,7 @@ jobs:
     name: "Checkov compliance scan"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Run checkov
         uses: bridgecrewio/checkov-action@f9b0a2206b0401cad02ac0a66be2a7934a5be838
